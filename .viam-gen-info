@@ -1,0 +1,13 @@
+{
+  "module_name": "HelloMotion",
+  "visibility": "private",
+  "namespace": "viamdemo",
+  "language": "go",
+  "resource_type": "service",
+  "resource_subtype": "generic",
+  "model_name": "hellomotion",
+  "initialize_git": false,
+  "generator_version": "0.1.0",
+  "generated_on": "2026-01-21T19:11:39.301604Z",
+  "module_readme_link": "README.md"
+}
