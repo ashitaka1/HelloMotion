@@ -156,7 +156,15 @@ func (s *hellomotionHellomotion) DoCommand(ctx context.Context, cmd map[string]i
 		}, nil
 	}
 
-	return nil, fmt.Errorf("unknown command: expected 'wave' or 'pickup'")
+	if release, ok := cmd["release"].(bool); ok && release {
+		s.logger.Info("you asked me to release")
+		if err := s.handleRelease(ctx); err != nil {
+			return nil, err
+		}
+		return map[string]interface{}{"release": true}, nil
+	}
+
+	return nil, fmt.Errorf("unknown command: expected 'wave', 'pickup', or 'release'")
 }
 
 func (s *hellomotionHellomotion) handleWave(ctx context.Context) {
@@ -205,7 +213,7 @@ func (s *hellomotionHellomotion) handlePickup(ctx context.Context) (spatialmath.
 	// Move arm to object pose, offset +170mm in Z
 	abovePose := spatialmath.NewPose(
 		objPose.Point().Add(r3.Vector{X: 0, Y: 0, Z: 170}),
-		&spatialmath.OrientationVectorDegrees{OX: 0, OY: 0, OZ: -1, Theta: 0},
+		&spatialmath.OrientationVectorDegrees{OX: 0, OY: 0, OZ: -1, Theta: 180},
 	)
 	s.logger.Infof("object pose: %+v", objPose.Point())
 	s.logger.Infof("above pose (+170mm Z): %+v", abovePose.Point())
@@ -223,6 +231,32 @@ func (s *hellomotionHellomotion) handlePickup(ctx context.Context) (spatialmath.
 	}
 
 	return objPose, nil
+}
+
+func (s *hellomotionHellomotion) handleRelease(ctx context.Context) error {
+	// Get current arm pose
+	currentPose, err := s.motion.GetPose(ctx, s.cfg.Arm, "world", nil, nil)
+	if err != nil {
+		return fmt.Errorf("could not get current arm pose: %w", err)
+	}
+
+	// Move arm up by 250mm in Z
+	upPose := spatialmath.NewPose(
+		currentPose.Pose().Point().Add(r3.Vector{X: 0, Y: 0, Z: 250}),
+		currentPose.Pose().Orientation(),
+	)
+	s.logger.Infof("moving arm up from %+v to %+v", currentPose.Pose().Point(), upPose.Point())
+	destination := referenceframe.NewPoseInFrame("world", upPose)
+	if _, err := s.motion.Move(ctx, motion.MoveReq{ComponentName: s.cfg.Arm, Destination: destination}); err != nil {
+		return fmt.Errorf("could not move arm up: %w", err)
+	}
+
+	// Open gripper
+	if err := s.gripper.Open(ctx, nil); err != nil {
+		return fmt.Errorf("could not open gripper: %w", err)
+	}
+	s.logger.Info("gripper opened, object released")
+	return nil
 }
 
 func (s *hellomotionHellomotion) Close(context.Context) error {
