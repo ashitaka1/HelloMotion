@@ -1,47 +1,68 @@
 # Model viamdemo:HelloMotion:hellomotion
 
-Provide a description of the model and any relevant information.
+A generic service module that provides arm motion commands: waving and picking up the largest detected object using a vision service.
 
 ## Configuration
+
 The following attribute template can be used to configure this model:
 
 ```json
 {
-"attribute_1": <float>,
-"attribute_2": <string>
+  "arm": "<string>",
+  "gripper": "<string>",
+  "pickup_vision": "<string>"
 }
 ```
 
 ### Attributes
 
-The following attributes are available for this model:
-
-| Name          | Type   | Inclusion | Description                |
-|---------------|--------|-----------|----------------------------|
-| `attribute_1` | float  | Required  | Description of attribute 1 |
-| `attribute_2` | string | Optional  | Description of attribute 2 |
+| Name             | Type   | Inclusion | Description                                                                                     |
+|------------------|--------|-----------|-------------------------------------------------------------------------------------------------|
+| `arm`            | string | Required  | The name of the arm component to control.                                                       |
+| `gripper`        | string | Required  | The name of the gripper component to use for grabbing objects.                                   |
+| `pickup_vision`  | string | Required  | The name of the vision service (e.g., `obstacles-pointcloud`) used to detect objects to pick up. |
 
 ### Example Configuration
 
 ```json
 {
-  "attribute_1": 1.0,
-  "attribute_2": "foo"
+  "arm": "uf850",
+  "gripper": "my-gripper",
+  "pickup_vision": "my-obstacles-pointcloud"
 }
 ```
 
 ## DoCommand
 
-If your model implements DoCommand, provide an example payload of each command that is supported and the arguments that can be used. If your model does not implement DoCommand, remove this section.
+### `wave`
 
-### Example DoCommand
+Moves the arm 20mm in the Y direction from its current pose.
 
 ```json
 {
-  "command_name": {
-    "arg1": "foo",
-    "arg2": 1
-  }
+  "wave": true
 }
 ```
 
+### `pickup`
+
+Uses the configured vision service to detect objects via `GetObjectPointClouds`, finds the largest object by point count, moves the arm to that object's pose offset by +400mm in Z, then closes the gripper. Returns the detected object's pose.
+
+```json
+{
+  "pickup": true
+}
+```
+
+Example response:
+
+```json
+{
+  "pickup": true,
+  "pose": {
+    "x": 100.5,
+    "y": -200.3,
+    "z": 50.0
+  }
+}
+```
