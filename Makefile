@@ -9,6 +9,10 @@ ifeq ($(VIAM_TARGET_OS), windows)
 	MODULE_BINARY = bin/HelloMotion.exe
 endif
 
+ifneq ($(CGO_ENABLED),1)
+	GO_BUILD_FLAGS += -tags no_cgo
+endif
+
 $(MODULE_BINARY): Makefile go.mod *.go cmd/module/*.go 
 	GOOS=$(VIAM_BUILD_OS) GOARCH=$(VIAM_BUILD_ARCH) $(GO_BUILD_ENV) go build $(GO_BUILD_FLAGS) -o $(MODULE_BINARY) cmd/module/main.go
 
